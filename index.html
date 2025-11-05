@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>에코 퀴즈 — 10문제</title>
+  <style>
+    :root{
+      --bg:#f0fbf6;
+      --card:#ffffff;
+      --accent:#2b9a78;
+      --accent-2:#0b6b4a;
+      --muted:#6b6b6b;
+      --correct:#28a745;
+      --wrong:#dc3545;
+      --glass: rgba(255,255,255,0.7);
+      font-family: "Apple SD Gothic Neo","Noto Sans KR",Segoe UI,Roboto,Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(180deg, var(--bg), #e8f7ef);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      color:#0e2d26;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:820px;
+      background:var(--card);
+      border-radius:14px;
+      box-shadow:0 8px 30px rgba(15,40,30,0.12);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    header{
+      padding:18px 22px;
+      border-bottom:1px solid #eef6f2;
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    header h1{margin:0;font-size:18px}
+    .meta{margin-left:auto;text-align:right;font-size:13px;color:var(--muted)}
+    .progress{
+      height:8px;
+      background:linear-gradient(90deg, rgba(11,107,74,0.12), rgba(43,154,120,0.08));
+      border-radius:8px;
+      margin:12px 22px;
+      overflow:hidden;
+    }
+    .progress > i{
+      display:block;height:100%;
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+      width:0%;
+      transition:width .45s ease;
+    }
+
+    main{
+      padding:28px 22px;
+      display:flex;
+      gap:22px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+
+    .card-left{
+      flex:1 1 420px;
+      min-width:260px;
+    }
+    .qbox{
+      background:var(--glass);
+      border-radius:10px;
+      padding:18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .qnum{font-size:13px;color:var(--muted);margin-bottom:8px}
+    .question{font-size:20px;line-height:1.35;margin:6px 0 12px}
+    .choices{display:grid;gap:10px}
+    .choice{
+      border-radius:10px;
+      padding:12px 14px;
+      background:white;
+      border:1px solid #e6f0ec;
+      cursor:pointer;
+      transition:transform .12s ease, box-shadow .12s ease;
+      user-select:none;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .choice:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(8,30,20,0.06);}
+    .choice input{display:none}
+    .choice .label{font-size:15px}
+    .choice.correct{border-color:var(--correct);background:linear-gradient(90deg, rgba(40,167,69,0.06), rgba(40,167,69,0.02))}
+    .choice.wrong{border-color:var(--wrong);background:linear-gradient(90deg, rgba(220,53,69,0.06), rgba(220,53,69,0.02))}
+    .hint{margin-top:10px;font-size:13px;color:var(--muted);display:none}
+
+    .card-right{
+      width:240px;
+      min-width:220px;
+      padding-top:6px;
+    }
+    .scorecard{
+      background:#fbfffd;
+      border-radius:10px;
+      padding:14px;
+      border:1px solid #eaf6ef;
+    }
+    .score{font-size:34px;margin:6px 0}
+    .small{font-size:13px;color:var(--muted)}
+    .controls{
+      display:flex;
+      gap:10px;
+      margin-top:14px;
+    }
+    button{
+      background:var(--accent);
+      border:none;
+      color:white;
+      padding:10px 14px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow:0 6px 14px rgba(43,154,120,0.18);
+    }
+    button[disabled]{opacity:0.5;cursor:not-allowed;box-shadow:none}
+    button.secondary{
+      background:transparent;color:var(--accent-2);border:1px solid #dff3ea;box-shadow:none;font-weight:600;
+    }
+
+    footer{
+      padding:14px 22px;
+      border-top:1px solid #eef6f2;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    /* 결과 화면 */
+    .result{
+      padding:28px;
+      text-align:center;
+      width:100%;
+    }
+    .result h2{margin:8px 0 6px}
+    .result p{color:var(--muted);margin:6px 0 12px}
+    .try-again{margin-top:12px}
+
+    /* 풍선 & 팝 애니메이션 */
+    .balloon-wrap{position:relative;height:180px;display:flex;align-items:center;justify-content:center;}
+    .balloon{
+      width:120px;height:160px;border-radius:70% 70% 60% 60%/60% 60% 40% 40%;
+      background:linear-gradient(180deg,#ff6b8a,#ff2d55);
+      position:relative;display:inline-block;
+      transform-origin:50% 90%;
+      transition:transform .18s ease;
+      box-shadow:0 8px 24px rgba(255,45,85,0.18), inset -6px -10px 40px rgba(255,255,255,0.14);
+    }
+    .balloon::after{
+      content:"";position:absolute;left:50%;bottom:-18px;width:2px;height:24px;background:#b14;
+      transform:translateX(-50%);
+    }
+    .burst{
+      position:absolute;inset:0;pointer-events:none;
+      display:grid;place-items:center;
+      opacity:0;transition:opacity .3s ease;
+    }
+    .burst.active{opacity:1}
+    .confetti{
+      position:absolute;opacity:0;animation:confetti 900ms ease-out forwards;
+      width:10px;height:18px;border-radius:2px;
+    }
+    @keyframes confetti{
+      0%{transform:translateY(0) rotate(0);opacity:1}
+      100%{transform:translateY(-220px) translateX(var(--tx)) rotate(var(--rot));opacity:0}
+    }
+    .pop{
+      transform:scale(0);
+      transition:transform .25s ease;
+    }
+
+    /* 반응형 */
+    @media (max-width:720px){
+      main{padding:18px}
+      .card-right{width:100%}
+      header,footer{padding:12px}
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-labelledby="title">
+    <header>
+      <div>
+        <h1 id="title">에코 퀴즈 — 환경 상식 (고등학생 수준)</h1>
+        <div style="font-size:13px;color:var(--muted)">총 10문제 • 하나씩 풀어요</div>
+      </div>
+      <div class="meta">
+        <div id="qCount">문제 1 / 10</div>
+        <div id="progText" style="font-size:12px;color:var(--muted)">목표: 8개 이상 맞히면 풍선 팝!</div>
+      </div>
+    </header>
+
+    <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+
+    <main>
+      <div class="card-left">
+        <div class="qbox" id="qbox" aria-live="polite">
+          <div class="qnum" id="qnum">Q1</div>
+          <div class="question" id="question">여기에 질문이 표시됩니다.</div>
+
+          <div class="choices" id="choices" role="list"></div>
+
+          <div class="hint" id="hint" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <aside class="card-right">
+        <div class="scorecard" aria-hidden="false">
+          <div class="small">현재 점수</div>
+          <div class="score" id="score">0 / 10</div>
+          <div class="small">정답률: <span id="percent">0%</span></div>
+
+          <div class="controls" style="margin-top:12px">
+            <button id="nextBtn" disabled>다음</button>
+            <button id="skipBtn" class="secondary">건너뛰기</button>
+          </div>
+
+          <div style="margin-top:14px;font-size:13px;color:var(--muted)">
+            <strong>힌트</strong>는 각 문제에 대한 간단한 설명(정답 제출 후 자동 표시).
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+
+        <div class="balloon-wrap" aria-hidden="true">
+          <div class="balloon" id="balloon" title="축하 풍선"></div>
+          <div class="burst" id="burst"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <div style="font-size:13px;color:var(--muted)">환경에 대한 이해를 넓히는 연습이에요 — 틀려도 괜찮아요.</div>
+      <div>
+        <button id="restart" class="secondary">처음부터</button>
+      </div>
+    </footer>
+
+    <!-- 결과 모달영역 (간단) -->
+    <div id="resultScreen" class="result" style="display:none">
+      <h2 id="resultTitle">결과</h2>
+      <p id="resultMsg">점수와 메시지가 여기에 옵니다.</p>
+      <div id="finalScore" style="font-size:22px;font-weight:700"></div>
+      <div style="margin-top:12px">
+        <button id="replayBtn">다시 풀기</button>
+        <button id="reviewBtn" class="secondary">오답 확인</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 질문 데이터 (10문제, 고등학생 수준)
+    const questions = [
+      {
+        q: "온실효과의 주된 원인 물질 중, 지구의 평균 기온 상승에 가장 큰 영향을 미치는 것은 무엇인가?",
+        choices: ["이산화탄소(CO₂)", "산소(O₂)", "질소(N₂)", "헬륨(He)"],
+        answer: 0,
+        hint: "화석연료 연소와 산림 파괴로 방출되는 이산화탄소는 가장 큰 기여를 합니다."
+      },
+      {
+        q: "해양산성화가 심화되면 해양생물에 미치는 영향으로 옳지 않은 것은?",
+        choices: ["산호의 석회화 능력 감소", "조개·패류의 껍질 약화", "어류의 광합성 증가", "플랑크톤 서식지 변화"],
+        answer: 2,
+        hint: "어류는 광합성하지 않으므로 '광합성 증가'는 사실이 아닙니다."
+      },
+      {
+        q: "생물다양성(Biodiversity)이 중요한 이유로 옳은 설명은?",
+        choices: ["생태계 안정성과 생산성 유지에 기여한다","자원 채굴을 쉽게 해준다","종 수가 적을수록 안정적이다","질병 발생을 촉진한다"],
+        answer: 0,
+        hint: "다양한 종이 있을수록 생태계의 회복력과 기능이 좋아집니다."
+      },
+      {
+        q: "재활용 분류에서 '플라스틱' 중 재활용 어려운 대표적 유형은 무엇인가?",
+        choices: ["일반 PET(1번) 병","폴리프로필렌(PP, 5번) 식품 용기","혼합 소재 비닐(예: 라미네이트)","HDPE(2번) 세제 용기"],
+        answer: 2,
+        hint: "여러 소재가 합쳐진 라미네이트류는 분리·재활용이 매우 어렵습니다."
+      },
+      {
+        q: "지속 가능한 에너지 전환을 위해 중요한 전략으로 알맞은 것은?",
+        choices: ["화력 발전 비중 유지", "재생에너지 보급 확대와 전력 저장기술 개발", "석탄 사용 확대", "에너지 소비 증가 유도"],
+        answer: 1,
+        hint: "재생에너지 확대와 배터리·그리드 기술이 핵심입니다."
+      },
+      {
+        q: "대기 중 미세먼지(PM2.5)가 건강에 미치는 영향으로 틀린 것은?",
+        choices: ["호흡기 질환 악화","심혈관계 질환 위험 증가","장기적인 노출 시 폐 기능 저하","미세먼지는 비활성이라 무해하다"],
+        answer: 3,
+        hint: "미세먼지는 매우 해로우며 여러 질환과 연관됩니다."
+      },
+      {
+        q: "탄소중립(넷 제로)을 달성하기 위한 방법으로 적절하지 않은 것은?",
+        choices: ["화석연료 사용 감소","탄소 포집·저장 기술(CCS) 도입","산림 흡수원 보호·복원","온실가스 무단 배출 확대"],
+        answer: 3,
+        hint: "넷 제로는 배출 감축과 흡수 증대를 통해 달성합니다. 무단 배출 확대는 정반대입니다."
+      },
+      {
+        q: "생태계 서비스에 해당하지 않는 것은?",
+        choices: ["수자원 정화","식량 제공","문화·레크리에이션 제공","인터넷 속도 향상"],
+        answer: 3,
+        hint: "인터넷 속도는 생태계 서비스 범주에 속하지 않습니다."
+      },
+      {
+        q: "플라스틱이 자연에서 분해되는 데 오래 걸리는 이유는 무엇인가?",
+        choices: ["고분자 구조가 미생물 분해에 저항하기 때문","물이 부족해서","공기 중 산소가 너무 많아서","빛이 없어서"],
+        answer: 0,
+        hint: "플라스틱의 고분자 결합은 미생물이 쉽게 분해하지 못하게 합니다."
+      },
+      {
+        q: "지속가능한 소비(Sustainable consumption)의 예로 적절한 것은?",
+        choices: ["불필요한 포장 제품 구매","수리 가능한 제품 사용·수리","한 번 쓰고 버리는 제품 선호","낭비적 소비 장려"],
+        answer: 1,
+        hint: "수리·재사용을 장려하면 자원 낭비를 줄일 수 있습니다."
+      }
+    ];
+
+    // 상태
+    let current = 0;
+    let score = 0;
+    let userAnswers = Array(questions.length).fill(null);
+
+    // DOM 참조
+    const qnumEl = document.getElementById('qnum');
+    const questionEl = document.getElementById('question');
+    const choicesEl = document.getElementById('choices');
+    const nextBtn = document.getElementById('nextBtn');
+    const skipBtn = document.getElementById('skipBtn');
+    const scoreEl = document.getElementById('score');
+    const percentEl = document.getElementById('percent');
+    const qCountEl = document.getElementById('qCount');
+    const progressBar = document.getElementById('progressBar');
+    const hintEl = document.getElementById('hint');
+    const balloon = document.getElementById('balloon');
+    const burst = document.getElementById('burst');
+    const resultScreen = document.getElementById('resultScreen');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultMsg = document.getElementById('resultMsg');
+    const finalScore = document.getElementById('finalScore');
+    const restart = document.getElementById('restart');
+    const replayBtn = document.getElementById('replayBtn');
+    const reviewBtn = document.getElementById('reviewBtn');
+
+    // 초기화
+    function renderQuestion() {
+      const item = questions[current];
+      qnumEl.textContent = 'Q' + (current + 1);
+      questionEl.textContent = item.q;
+      qCountEl.textContent = `문제 ${current+1} / ${questions.length}`;
+      progressBar.style.width = `${((current)/questions.length)*100}%`;
+      hintEl.style.display = 'none';
+      hintEl.textContent = '';
+
+      // choices 렌더링
+      choicesEl.innerHTML = '';
+      item.choices.forEach((c, idx) => {
+        const btn = document.createElement('button');
+        btn.setAttribute('type','button');
+        btn.className = 'choice';
+        btn.setAttribute('role','listitem');
+        btn.setAttribute('data-index', idx);
+        btn.innerHTML = `<span class="label">${String.fromCharCode(65+idx)}. ${c}</span>`;
+        btn.addEventListener('click', onSelect);
+        btn.addEventListener('keydown', (e) => {
+          if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+        });
+        choicesEl.appendChild(btn);
+      });
+
+      // 다음 버튼 비활성화
+      nextBtn.disabled = true;
+    }
+
+    function onSelect(e){
+      // prevent double selection if answered
+      if(userAnswers[current] !== null) return;
+      const idx = Number(this.dataset.index);
+      userAnswers[current] = idx;
+      const correctIdx = questions[current].answer;
+
+      // 시각적 표시
+      Array.from(choicesEl.children).forEach((el) => {
+        const i = Number(el.dataset.index);
+        if(i === correctIdx){ el.classList.add('correct') }
+        if(i === idx && i !== correctIdx){ el.classList.add('wrong') }
+        el.setAttribute('aria-disabled','true');
+      });
+
+      // 채점
+      if(idx === correctIdx){ score++; }
+      scoreEl.textContent = `${score} / ${questions.length}`;
+      const pct = Math.round((score / questions.length) * 100);
+      percentEl.textContent = pct + '%';
+
+      // 힌트(설명) 표시
+      hintEl.textContent = questions[current].hint || '';
+      hintEl.style.display = 'block';
+
+      // 다음 활성화 (마지막이면 완료 처리)
+      nextBtn.disabled = false;
+      if(current === questions.length - 1){
+        nextBtn.textContent = '결과 보기';
+      } else {
+        nextBtn.textContent = '다음';
+      }
+    }
+
+    // 건너뛰기 (오답 처리로 간주: null 유지)
+    skipBtn.addEventListener('click', () => {
+      if(userAnswers[current] !== null) {
+        // 이미 답한 상태라면 다음으로
+        goNext();
+        return;
+      }
+      // 표시: 정답만 표시
+      const correctIdx = questions[current].answer;
+      Array.from(choicesEl.children).forEach((el) => {
+        const i = Number(el.dataset.index);
+        if(i === correctIdx) el.classList.add('correct');
+        el.setAttribute('aria-disabled','true');
+      });
+      hintEl.textContent = questions[current].hint || '';
+      hintEl.style.display = 'block';
+      nextBtn.disabled = false;
+      nextBtn.textContent = (current === questions.length - 1) ? '결과 보기' : '다음';
+    });
+
+    nextBtn.addEventListener('click', () => {
+      // 만약 마지막 문제라면 결과 표시
+      if(current === questions.length - 1){
+        showResult();
+        return;
+      }
+      goNext();
+    });
+
+    function goNext(){
+      current++;
+      renderQuestion();
+    }
+
+    function showResult(){
+      // progress 바 전부 채우기
+      progressBar.style.width = `100%`;
+      // 결과 레이아웃
+      const correctCount = score;
+      resultScreen.style.display = 'block';
+      resultTitle.textContent = (correctCount >= 8) ? '축하합니다!' : '수고했어요';
+      resultMsg.textContent = (correctCount >= 8) ? '훌륭해요 — 목표 달성! 풍선을 터뜨려 축하할게요 🎉' : '다음번엔 더 많이 맞출 수 있어요. 틀린 문제는 복습해봐요.';
+      finalScore.textContent = `정답 ${correctCount} / ${questions.length} (${Math.round((correctCount/questions.length)*100)}%)`;
+
+      // 풍선 팝 조건
+      if(correctCount >= 8){
+        triggerBalloonPop();
+      } else {
+        // 만약 못 미치면 풍선은 내려놓기(안 보이게)
+        balloon.style.opacity = '0.15';
+        burst.classList.remove('active');
+      }
+
+      // 간단한 결과 아래에 "오답 확인" 기능을 위해 reviewBtn 활성화
+      reviewBtn.onclick = () => reviewAnswers();
+      replayBtn.onclick = resetAll;
+    }
+
+    // 풍선 팝 애니메이션 구현
+    function triggerBalloonPop(){
+      // 재생 중이면 초기화
+      burst.innerHTML = '';
+      balloon.style.transform = 'scale(1)';
+      balloon.style.opacity = '1';
+
+      // 약간 흔들리게
+      balloon.animate([
+        { transform: 'translateY(0) rotate(0deg)' },
+        { transform: 'translateY(-6px) rotate(-4deg)' },
+        { transform: 'translateY(0) rotate(4deg)' },
+        { transform: 'translateY(-4px) rotate(-2deg)' },
+      ], { duration: 800, iterations: 2 });
+
+      // 700ms 후 팝
+      setTimeout(() => {
+        // balloon 숨기기
+        balloon.classList.add('pop');
+
+        // confetti 생성
+        const colors = ['#ff6b8a','#ffd166','#6be7c5','#6b9bff','#ff9f6b'];
+        const confettiCount = 26;
+        for(let i=0;i<confettiCount;i++){
+          const el = document.createElement('div');
+          el.className = 'confetti';
+          el.style.left = '50%';
+          el.style.bottom = '30px';
+          const tx = (Math.random()*400 - 200).toFixed(0) + 'px';
+          const rot = (Math.random()*720 - 360).toFixed(0) + 'deg';
+          el.style.setProperty('--tx', tx);
+          el.style.setProperty('--rot', rot);
+          el.style.background = colors[i % colors.length];
+          el.style.transform = `translateX(-50%)`;
+          el.style.opacity = '0';
+          el.style.animationDelay = (Math.random()*120) + 'ms';
+          burst.appendChild(el);
+        }
+        burst.classList.add('active');
+
+        // confetti 제거 (3.5s 후)
+        setTimeout(() => {
+          burst.classList.remove('active');
+          burst.innerHTML = '';
+          balloon.classList.remove('pop');
+          balloon.style.opacity = '0.18';
+        }, 3500);
+      }, 700);
+    }
+
+    // 오답 확인: 간단한 목록을 alert로 표시 (더 나은 UI는 필요하면 추가)
+    function reviewAnswers(){
+      let text = '문제별 정답 확인:\\n\\n';
+      questions.forEach((q, i) => {
+        const u = userAnswers[i];
+        const userStr = (u === null) ? '응답 없음' : `${String.fromCharCode(65+u)}. ${q.choices[u]}`;
+        const correctStr = `${String.fromCharCode(65+q.answer)}. ${q.choices[q.answer]}`;
+        text += `Q${i+1}. ${q.q}\\n정답: ${correctStr}\\n내 답: ${userStr}\\n\\n`;
+      });
+      // 브라우저 alert로 간단 표시 (원하면 모달로도 변경 가능)
+      const w = window.open('', '_blank', 'width=600,height=600,scrollbars=yes');
+      w.document.write('<pre style="white-space:pre-wrap;font-family:inherit;padding:18px;">' + text.replace(/</g,'&lt;') + '</pre>');
+    }
+
+    // 리셋
+    function resetAll(){
+      current = 0;
+      score = 0;
+      userAnswers = Array(questions.length).fill(null);
+      resultScreen.style.display = 'none';
+      balloon.style.opacity = '1';
+      burst.innerHTML = '';
+      scoreEl.textContent = `0 / ${questions.length}`;
+      percentEl.textContent = '0%';
+      progressBar.style.width = '0%';
+      renderQuestion();
+    }
+
+    // 시작
+    renderQuestion();
+
+    // 키보드 네비게이션: Enter로 다음(단, 선택 후)
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowRight'){
+        if(!nextBtn.disabled) nextBtn.click();
+      }
+    });
+
+    // 처음부터 버튼
+    restart.addEventListener('click', () => {
+      if(confirm('처음부터 다시 시작할까요? 진행 중인 답안은 초기화됩니다.')) resetAll();
+    });
+
+    // 페이지가 결과 모드인지 표시 (간단 방식: append result screen below)
+    // 결과 화면을 자동으로 main 아래에 표시
+    // showResult()에서 표시함.
+
+  </script>
+</body>
+</html>
